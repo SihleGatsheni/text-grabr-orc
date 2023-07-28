@@ -3,7 +3,7 @@ FROM golang:latest
 RUN mkdir /build
 WORKDIR /build
 
-RUN export GO111MODULE=on
+RUN export GO111MODULE=off
 RUN go get github.com/SihleGatsheni/text-grabr-orc/main
 RUN cd /build && git clone https://github.com/SihleGatsheni/text-grabr-orc.git
 
