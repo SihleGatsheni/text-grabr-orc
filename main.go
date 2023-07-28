@@ -8,6 +8,7 @@ import (
 	"image/color"
 	"image/png"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 func main() {
 	http.HandleFunc("/extract-text", handleOCR)
 	http.HandleFunc("/extract-receipt-data", handleReceiptExtraction)
+	log.Println("Server started on port 8080")
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -70,7 +72,7 @@ func handleOCR(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := processTextData(text)
-
+	log.Printf("Extracted Invoice Data: %+v\n", result)
 	responseJSON, err := json.Marshal(result.Text)
 	if err != nil {
 		http.Error(w, "Failed to create JSON response", http.StatusInternalServerError)
