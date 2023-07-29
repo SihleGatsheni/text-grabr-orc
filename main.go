@@ -12,15 +12,15 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
 func main() {
-	http.HandleFunc("/extract-text", handleOCR)
-	http.HandleFunc("/extract-receipt-data", handleReceiptExtraction)
-	log.Println("Server started on port 8080")
-	http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/extract-text", handleCORS(handleOCR))
+
+	port := ":8080"
+	log.Println("Server started on port", port)
+	http.ListenAndServe(port, nil)
 }
 
 func handleOCR(w http.ResponseWriter, r *http.Request) {
@@ -57,9 +57,7 @@ func handleOCR(w http.ResponseWriter, r *http.Request) {
 	// Check the file extension (image or PDF)
 	ext := strings.ToLower(filepath.Ext(handler.Filename))
 	var text string
-	if ext == ".pdf" {
-		text, err = extractTextFromPDF(tempFile)
-	} else if ext == ".png" || ext == ".jpg" || ext == ".jpeg" {
+	if ext == ".png" || ext == ".jpg" || ext == ".jpeg" {
 		text, err = extractTextFromImage(tempFile)
 	} else {
 		http.Error(w, "Invalid file format", http.StatusBadRequest)
@@ -81,76 +79,6 @@ func handleOCR(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(responseJSON)
-}
-func handleReceiptExtraction(w http.ResponseWriter, r *http.Request) {
-	// Parse the form data to get the uploaded file
-	err := r.ParseMultipartForm(10 << 20) // 10 MB limit for the uploaded file
-	if err != nil {
-		http.Error(w, "Unable to process the form", http.StatusBadRequest)
-		return
-	}
-
-	// Get the uploaded file from the form data
-	file, handler, err := r.FormFile("file")
-	if err != nil {
-		http.Error(w, "No file uploaded", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
-
-	// Save the uploaded file to a temporary location
-	tempFile := fmt.Sprintf("temp_%s", handler.Filename)
-	out, err := os.Create(tempFile)
-	if err != nil {
-		http.Error(w, "Failed to save file", http.StatusInternalServerError)
-		return
-	}
-	defer os.Remove(tempFile)
-
-	_, err = io.Copy(out, file)
-	if err != nil {
-		http.Error(w, "Failed to save file", http.StatusInternalServerError)
-		return
-	}
-
-	// Check the file extension (image or PDF)
-	ext := strings.ToLower(filepath.Ext(handler.Filename))
-	var text string
-	if ext == ".pdf" {
-		text, err = extractTextFromPDF(tempFile)
-	} else if ext == ".png" || ext == ".jpg" || ext == ".jpeg" {
-		text, err = extractTextFromImage(tempFile)
-	} else {
-		http.Error(w, "Invalid file format", http.StatusBadRequest)
-		return
-	}
-
-	if err != nil {
-		http.Error(w, "Failed to extract text", http.StatusInternalServerError)
-		return
-	}
-
-	result := processTextData(text)
-
-	responseJSON, err := json.Marshal(result)
-	if err != nil {
-		http.Error(w, "Failed to create JSON response", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(responseJSON)
-}
-
-func extractTextFromPDF(filePath string) (string, error) {
-	client := gosseract.NewClient()
-	defer client.Close()
-
-	client.SetImage(filePath)
-	client.SetLanguage("eng")
-	client.SetPageSegMode(gosseract.PSM_AUTO_OSD) // Set page segmentation mode
-
-	return client.Text()
 }
 
 func extractTextFromImage(filePath string) (string, error) {
@@ -245,51 +173,33 @@ func binarize(img *image.Gray) *image.NRGBA {
 	}
 	return binarized
 }
+
 func processTextData(text string) Result {
-	shopNameRegex := regexp.MustCompile(`^(.+)\n`)
-	totalRegex := regexp.MustCompile(`TOTAL (.+)`)
-	changeRegex := regexp.MustCompile(`CHANGE ([0-9.]+)`)
-	dateRegex := regexp.MustCompile(`(\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}|\d{2}:\d{2}:\d{2}\s+\d{6})`)
-
-	// Find the matches for shop name, total, and change amount
-	shopNameMatch := shopNameRegex.FindStringSubmatch(text)
-	totalMatch := totalRegex.FindStringSubmatch(text)
-	changeMatch := changeRegex.FindStringSubmatch(text)
-	dateMatch := dateRegex.FindStringSubmatch(text)
-
-	var shopName, total, date, changeAmount string
-	if len(shopNameMatch) == 2 {
-		shopName = shopNameMatch[1]
-	}
-	if len(totalMatch) == 2 {
-		total = totalMatch[1]
-	}
-	if len(changeMatch) == 2 {
-		changeAmount = changeMatch[1]
-	}
-	if len(dateMatch) == 2 {
-		date = dateMatch[1]
-	}
 	return Result{
-		Text: text,
-		Data: InvoiceData{
-			ShopName: shopName,
-			Total:    total,
-			Change:   changeAmount,
-			Date:     date,
-		},
+		Text:      text,
+		TextCount: len(text),
 	}
 
 }
 
-type InvoiceData struct {
-	ShopName string
-	Total    string
-	Change   string
-	Date     string
+func handleCORS(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight requests
+		if r.Method == http.MethodOptions {
+			return
+		}
+
+		// Call the next handler
+		next(w, r)
+	}
 }
 
 type Result struct {
-	Text string
-	Data InvoiceData
+	Text      string
+	TextCount int
 }

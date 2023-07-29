@@ -1,15 +1,18 @@
 FROM golang:latest
 
-RUN mkdir /build
-WORKDIR /build
+WORKDIR /app
 
-RUN export GO111MODULE=auto
-RUN go get github.com/SihleGatsheni/text-grabr-orc/main
-RUN go mod init
-RUN cd /build && git clone https://github.com/SihleGatsheni/text-grabr-orc.git
+# Copies everything from your root directory into /app
+COPY . .
 
-RUN cd /build/text-grabr-orc/main && go build
+# Installs Go dependencies
+RUN go mod download
 
+# Builds your app with optional configuration
+RUN go build -o /orc-api
+
+# Tells Docker which network port your container listens on
 EXPOSE 8080
 
-ENTRYPOINT ["/build/text-grabr-orc/main/main"]
+# Specifies the executable command that runs when the container starts
+CMD ["/orc-api" ]
