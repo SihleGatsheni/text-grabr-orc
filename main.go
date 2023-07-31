@@ -16,11 +16,25 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/extract-text", handleCORS(handleOCR))
+	http.HandleFunc("/api/v1/extract-text", handleCORS(handleOCR))
+
+	http.HandleFunc("/", handleServerStatus)
 
 	port := ":8080"
 	log.Println("Server started on port", port)
 	http.ListenAndServe(port, nil)
+}
+
+func handleServerStatus(w http.ResponseWriter, r *http.Request) {
+	host := r.Host
+
+	server := ServerResult{
+		Host:   host,
+		Status: "Running....",
+	}
+	responseJSON, _ := json.Marshal(server)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(responseJSON)
 }
 
 func handleOCR(w http.ResponseWriter, r *http.Request) {
@@ -69,9 +83,9 @@ func handleOCR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := processTextData(text)
-	log.Printf("Extracted Invoice Data: %+v\n", result)
-	responseJSON, err := json.Marshal(result.Text)
+	result := processText(text)
+	log.Printf("extracting text from image....")
+	responseJSON, err := json.Marshal(result)
 	if err != nil {
 		http.Error(w, "Failed to create JSON response", http.StatusInternalServerError)
 		return
@@ -174,12 +188,11 @@ func binarize(img *image.Gray) *image.NRGBA {
 	return binarized
 }
 
-func processTextData(text string) Result {
+func processText(text string) Result {
 	return Result{
 		Text:      text,
 		TextCount: len(text),
 	}
-
 }
 
 func handleCORS(next http.HandlerFunc) http.HandlerFunc {
@@ -202,4 +215,9 @@ func handleCORS(next http.HandlerFunc) http.HandlerFunc {
 type Result struct {
 	Text      string
 	TextCount int
+}
+
+type ServerResult struct {
+	Host   string `json:"host"`
+	Status string `json:"status"`
 }
