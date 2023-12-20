@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
  libleptonica-dev \
  tesseract-ocr \
- libtesseract-dev \
+ libtesseract-dev
 
 # Set necessary environment variables for CGO.
 ENV CGO_CFLAGS="-I/usr/include/leptonica"

@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/otiai10/gosseract/v2"
 	"image"
 	"image/color"
 	"image/png"
@@ -13,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/otiai10/gosseract/v2"
 )
 
 func main() {
@@ -191,7 +192,7 @@ func binarize(img *image.Gray) *image.NRGBA {
 func processText(text string) Result {
 	return Result{
 		Text:      text,
-		TextCount: len(text),
+		TextCount: len(strings.Fields(text)),
 	}
 }
 
@@ -213,8 +214,8 @@ func handleCORS(next http.HandlerFunc) http.HandlerFunc {
 }
 
 type Result struct {
-	Text      string
-	TextCount int
+	Text      string `json:"text"`
+	TextCount int    `json:"textCount"`
 }
 
 type ServerResult struct {
