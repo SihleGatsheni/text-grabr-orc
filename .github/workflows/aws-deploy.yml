@@ -25,10 +25,11 @@ jobs:
           instance-ids: ${{ secrets.AWS_INSTANCE_ID }}
           # Command execution location
           # !!! The line below may vary depending on where your docker-compose file is located.
-          working-directory: /home/ubuntu
+          working-directory: /home/ubuntu/
           # Bash commands you want to execute
           command: |
             sudo git clone https://github.com/SihleGatsheni/text-grabr-orc.git
+            cd text-grabr-orc
             sudo docker-compose stop
             sudo docker-compose rm -f
             sudo docker-compose pull
