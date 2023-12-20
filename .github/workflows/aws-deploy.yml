@@ -11,6 +11,7 @@ on:
 jobs:
   on-success:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: AWS SSM Send-Command
         uses: peterkimzz/aws-ssm-send-command@v1.1.1
@@ -28,6 +29,7 @@ jobs:
           working-directory: /home/ubuntu
           # Bash commands you want to execute
           command: |
+            sudo git clone https://github.com/SihleGatsheni/text-grabr-orc.git
             sudo docker-compose stop
             sudo docker-compose rm -f
             sudo docker-compose pull
