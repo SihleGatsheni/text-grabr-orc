@@ -33,7 +33,7 @@ jobs:
             sudo docker-compose stop
             sudo docker-compose rm -f
             sudo docker-compose pull
-            sudo docker-compose up --scale api=20 -d
+            sudo docker-compose up --scale api=75 -d
             sudo docker image prune -af
           # Comment for Send-Command
           comment: docker-compose.yml file re-pulls newer versions of book-portal images and runs them on the instance.
