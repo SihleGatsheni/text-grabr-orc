@@ -28,10 +28,11 @@ jobs:
           working-directory: /home/ubuntu/
           # Bash commands you want to execute
           command: |
-            sudo git clone https://github.com/SihleGatsheni/text-grabr-orc.git
-            cd text-grabr-orc
             sudo docker-compose stop
             sudo docker-compose rm -f
+            sudo rm -rf text-grabr-orc
+            sudo git clone https://github.com/SihleGatsheni/text-grabr-orc.git
+            cd text-grabr-orc
             sudo docker-compose pull
             sudo docker-compose up --scale api=20 -d
             sudo docker image prune -af
