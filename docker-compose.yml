@@ -1,4 +1,4 @@
-version: '4'
+version: '3'
 
 services:
   api:
@@ -11,4 +11,4 @@ services:
     depends_on:
       - api
     ports:
-      - 80:8080
+      - 443:8080
